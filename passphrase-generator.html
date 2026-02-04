@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passphrasen-Generator</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-primary: #0a0a0b;
+            --bg-secondary: #141416;
+            --bg-tertiary: #1c1c1f;
+            --accent: #22c55e;
+            --accent-dim: #166534;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #52525b;
+            --border: #27272a;
+            --danger: #ef4444;
+        }
+        
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background-image: 
+                radial-gradient(ellipse at 20% 20%, rgba(34, 197, 94, 0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(34, 197, 94, 0.02) 0%, transparent 50%);
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 580px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dim) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-top: 0.5rem;
+        }
+        
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.75rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .output-area {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.25rem;
+            position: relative;
+            transition: border-color 0.2s ease;
+        }
+        
+        .output-area:hover {
+            border-color: var(--accent-dim);
+        }
+        
+        .output-area.copied {
+            border-color: var(--accent);
+        }
+        
+        #passphrase {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-align: center;
+            word-break: break-word;
+            line-height: 1.5;
+            letter-spacing: 0.02em;
+        }
+        
+        #passphrase .separator {
+            color: var(--accent);
+        }
+        
+        #passphrase .number {
+            color: var(--accent);
+        }
+        
+        .placeholder {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        .copy-hint {
+            position: absolute;
+            bottom: 0.5rem;
+            right: 0.75rem;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .output-area:hover .copy-hint {
+            opacity: 1;
+        }
+        
+        .copied-toast {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--accent);
+            color: var(--bg-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        
+        .copied-toast.show {
+            opacity: 1;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        select, input[type="text"] {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.95rem;
+            padding: 0.75rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+        
+        select:hover, input[type="text"]:hover {
+            border-color: var(--text-muted);
+        }
+        
+        select:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: var(--bg-secondary);
+        }
+        
+        select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+        }
+        
+        .checkbox-wrapper {
+            position: relative;
+            width: 20px;
+            height: 20px;
+        }
+        
+        .checkbox-wrapper input {
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            cursor: pointer;
+            z-index: 1;
+        }
+        
+        .checkbox-custom {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .checkbox-wrapper input:checked + .checkbox-custom {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        
+        .checkbox-custom::after {
+            content: '';
+            position: absolute;
+            left: 6px;
+            top: 2px;
+            width: 5px;
+            height: 10px;
+            border: solid var(--bg-primary);
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .checkbox-wrapper input:checked + .checkbox-custom::after {
+            opacity: 1;
+        }
+        
+        .checkbox-label {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+        
+        .btn {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dim) 100%);
+            color: var(--bg-primary);
+            width: 100%;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(34, 197, 94, 0.25);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        .entropy-bar {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+        
+        .entropy-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .entropy-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .entropy-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--accent);
+            font-weight: 700;
+        }
+        
+        .entropy-track {
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .entropy-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--danger) 0%, #f59e0b 40%, var(--accent) 70%);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        
+        .info-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+        
+        .info-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .info-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .info-list li {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        
+        .info-list li::before {
+            content: '✓';
+            color: var(--accent);
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        
+        footer {
+            margin-top: 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+        
+        footer a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+        
+        footer a:hover {
+            color: var(--accent);
+        }
+        
+        @media (max-width: 480px) {
+            .controls {
+                grid-template-columns: 1fr;
+            }
+            
+            #passphrase {
+                font-size: 1.1rem;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">🔐</div>
+                <h1>Passphrasen-Generator</h1>
+            </div>
+            <p class="subtitle">Sichere, merkbare Passwörter – komplett offline</p>
+        </header>
+        
+        <div class="card">
+            <div class="output-area" id="outputArea" onclick="copyToClipboard()">
+                <div id="passphrase"><span class="placeholder">Klicke auf "Generieren"</span></div>
+                <span class="copy-hint">Klicken zum Kopieren</span>
+                <div class="copied-toast" id="copiedToast">Kopiert!</div>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label for="wordCount">Anzahl Wörter</label>
+                    <select id="wordCount">
+                        <option value="3">3 Wörter</option>
+                        <option value="4" selected>4 Wörter</option>
+                        <option value="5">5 Wörter</option>
+                        <option value="6">6 Wörter</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="separator">Trennzeichen</label>
+                    <select id="separator">
+                        <option value="-">Bindestrich ( - )</option>
+                        <option value=".">Punkt ( . )</option>
+                        <option value="_">Unterstrich ( _ )</option>
+                        <option value=",">Komma ( , )</option>
+                        <option value="/">Schrägstrich ( / )</option>
+                        <option value="+">Plus ( + )</option>
+                        <option value="*">Stern ( * )</option>
+                        <option value="#">Raute ( # )</option>
+                        <option value="!">Ausrufezeichen ( ! )</option>
+                        <option value="=">Gleichzeichen ( = )</option>
+                        <option value=":">Doppelpunkt ( : )</option>
+                        <option value=";">Semikolon ( ; )</option>
+                        <option value=" ">Leerzeichen</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="checkbox-group">
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="addNumber" checked>
+                    <div class="checkbox-custom"></div>
+                </div>
+                <label class="checkbox-label" for="addNumber">Zahl am Ende hinzufügen (00-99)</label>
+            </div>
+            
+            <div class="checkbox-group">
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="randomSeparator">
+                    <div class="checkbox-custom"></div>
+                </div>
+                <label class="checkbox-label" for="randomSeparator">Zufälliges Trennzeichen (+3.7 Bit)</label>
+            </div>
+            
+            <div class="checkbox-group">
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="capitalize">
+                    <div class="checkbox-custom"></div>
+                </div>
+                <label class="checkbox-label" for="capitalize">Wörter groß schreiben</label>
+            </div>
+            
+            <button class="btn btn-primary" onclick="generate()">
+                <span>⟳</span> Generieren
+            </button>
+            
+            <div class="entropy-bar">
+                <div class="entropy-header">
+                    <span class="entropy-label">Entropie</span>
+                    <span class="entropy-value" id="entropyValue">-- Bit</span>
+                </div>
+                <div class="entropy-track">
+                    <div class="entropy-fill" id="entropyFill" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <div class="info-title">
+                <span>🛡️</span> Sicherheitshinweise
+            </div>
+            <ul class="info-list">
+                <li>Läuft komplett lokal – keine Daten werden übertragen</li>
+                <li>Nutzt kryptografisch sicheren Zufall (crypto.getRandomValues)</li>
+                <li>2048 Wörter = 11 Bit/Wort, Zahl = 6.6 Bit, Trennzeichen = 3.7 Bit</li>
+                <li>4 Wörter + Zahl + Trennzeichen = ~55 Bit ✓</li>
+            </ul>
+        </div>
+        
+        <footer>
+            Quellcode einsehbar · Keine Cookies · Kein Tracking
+        </footer>
+    </div>
+
+    <script>
+        // Deutsche Wortliste: 2048 einfache, gut merkbare Nomen (11 Bit pro Wort)
+        const wordlist = [
+            "affe","ampel","anker","apfel","arzt","auge","auto","bach","ball","bank","baum","berg","bett","bier","bild","birne",
+            "blatt","blitz","blume","boot","brille","brot","bruch","brust","buch","busch","butter","couch","dach","daumen","decke","diamant",
+            "dieb","dorf","dose","drache","draht","durst","dusche","eiche","eimer","eis","eisen","elch","engel","ente","erbe","erde",
+            "esel","eule","fabrik","faden","fahne","falke","farbe","fass","faust","feder","feier","feige","feld","fels","fenster","feuer",
+            "fichte","film","finger","fisch","flasche","fleck","fleisch","fliege","floss","flug","flur","fluss","forst","foto","frosch","frucht",
+            "fuchs","funke","gabel","gang","gans","garten","gast","geist","geld","gemse","geruch","gesang","gift","gipfel","glas","gleis",
+            "glocke","glut","gold","grab","graben","gras","griff","grund","gurke","gurt","haare","hafen","hagel","hahn","hai","haken",
+            "halle","hals","hammer","hand","hase","haupt","haus","haut","hecht","hecke","hemd","henne","herbst","herd","herz","heu",
+            "hexe","himmel","hirsch","hitze","hobel","hof","holz","honig","horn","hose","hotel","hund","hunger","hut","igel","insel",
+            "jacke","jagd","junge","kabel","kaffee","kaiser","kalb","kammer","kampf","kanal","kante","karte","katze","keller","kern","kerze",
+            "kette","keule","kiefer","kind","kinn","kino","kirche","kirsche","kiste","kittel","klang","klee","kleid","klippe","klotz","kneipe",
+            "knie","knopf","knoten","koch","koffer","kohl","kohle","kopf","korb","korn","kraft","kragen","kralle","kran","kranz","kraut",
+            "krebs","kreide","kreis","kreuz","krieg","krone","kuchen","kugel","kuh","kunst","kupfer","lachs","laden","lager","lamm","lampe",
+            "land","lanze","lappen","last","laub","lauch","laus","lava","leber","leder","lehm","lehrer","leib","leiche","leim","leine",
+            "leiter","licht","lied","linde","linie","linse","lippe","liste","loch","locke","lotus","luft","lunge","magen","magnet","mais",
+            "mann","mantel","markt","mast","matte","mauer","maus","meer","mehl","meise","meister","menge","messer","metall","milch","minze",
+            "mitte","monat","mond","moos","motor","motte","mulde","mund","muschel","muster","mutter","nagel","name","narbe","nase","nebel",
+            "nelke","nest","netz","niere","niete","nixe","nonne","note","nudel","nuss","oase","ofen","ohr","olive","onkel","oper",
+            "orange","orden","orgel","ort","osten","otter","paar","palast","palme","panda","panik","papst","park","paste","pater","pauke",
+            "perle","pfahl","pfand","pfanne","pfarrer","pfau","pfeffer","pfeife","pfeil","pferd","pflanze","pflaster","pflaume","pforte","pfote","pfund",
+            "pilz","pinsel","pirat","plakat","plane","platz","pollen","polster","pommes","pony","posten","pracht","preis","prinz","probe","pudel",
+            "puder","pullover","puls","pulver","pumpe","punkt","puppe","qualle","qualm","quark","quelle","quitte","rabe","rachen","rad","rahmen",
+            "rakete","rand","ranke","rasen","ratte","rauch","raum","raupe","rebe","regal","regen","reh","reich","reifen","reihe","reis",
+            "reise","reiter","riegel","riese","riff","rind","ring","rippe","riss","ritter","robbe","rock","roggen","rohr","rolle","rose",
+            "rost","ruder","rumpf","runde","saal","saat","sack","saft","sage","sahne","salat","salbe","salz","samen","sand","sattel",
+            "schach","schaf","schal","schale","schalter","schatten","schatz","schaum","scheibe","schere","scheune","schicht","schiff","schild","schimmel","schinken",
+            "schirm","schlaf","schlange","schlauch","schleife","schloss","schlucht","schluss","schmied","schnabel","schnecke","schnee","schnitt","schnur","scholle","schrank",
+            "schraube","schreck","schrift","schritt","schuld","schule","schulter","schuppe","schutz","schwamm","schwan","schwanz","schwarm","schwein","schwert","see",
+            "seele","segel","segen","seide","seife","seil","seite","sekunde","senf","sense","sessel","seuche","sichel","sieb","siegel","signal",
+            "silber","sitz","socke","sohle","sohn","sommer","sonne","sorge","spalt","spange","spatz","speck","speiche","speicher","speise","spiegel",
+            "spiel","spinne","spitze","splitter","sporn","sport","sprache","sprung","spur","stab","stachel","stadt","stahl","stall","stamm","stand",
+            "stange","stapel","start","staub","stein","stelle","stempel","stern","steuer","stich","stiefel","stiel","stift","stimme","stirn","stock",
+            "stoff","storch","strand","strasse","strauch","streifen","strick","stroh","strom","strumpf","stuck","stufe","stuhl","stunde","sturm","suche",
+            "sumpf","suppe","tabak","tafel","tag","takt","taler","tanne","tante","tanz","tasche","tasse","tatze","tau","taube","taucher",
+            "teich","teig","teller","tempel","teppich","tier","tinte","tisch","titel","tochter","topf","tor","torte","tracht","traum","treppe",
+            "trick","tritt","tropfen","trost","truhe","truppe","tuch","tulpe","turm","ufer","uhr","umzug","unfall","union","urlaub","vase",
+            "vater","veilchen","verse","vieh","vogel","volk","waage","wabe","wache","wagen","wahl","wald","wand","wange","wanze","ware",
+            "wasser","watte","wecker","wege","weide","wein","weise","weizen","welle","welt","werk","wert","wespe","westen","wetter","wiese",
+            "wild","wind","winter","wipfel","wirbel","wirt","wolf","wolke","wolle","wort","wucht","wunde","wunsch","wurf","wurm","wurst",
+            "wurzel","wut","zahl","zahn","zange","zapfen","zaun","zebra","zehe","zeichen","zeile","zeit","zelle","zelt","ziegel","ziege",
+            "ziel","zimmer","zinn","zins","zipfel","zitrone","zoll","zone","zopf","zorn","zucker","zug","zunge","zweig","zwiebel","zwilling",
+            "adler","alarm","alge","altar","amber","ameise","angel","angst","anzug","arbeit","asche","atem","atlas","atom","auster","azubi",
+            "bagger","balken","ballon","banane","bande","barke","baron","bart","basis","bauch","bauer","becher","beere","besen","beule","beutel",
+            "biene","birke","bischof","bison","blase","blech","blei","block","bluse","boden","bogen","bohne","boje","bolzen","bombe","bonus",
+            "borke","borste","boss","braten","braue","brezel","briefe","bronze","bruder","brunnen","buche","buckel","bunker","burg","bursche","dame",
+            "dampf","dank","dattel","deck","delta","dichte","diesel","ding","distel","dolch","donner","doppel","dorn","dreck","drossel","druck",
+            "duft","dunkel","echo","ecke","ehre","eidechse","eifer","eingang","einheit","einhorn","elefant","elster","ende","energie","enkel","ernte",
+            "essig","etage","export","fach","fackel","fahrer","fahrt","falte","familie","fang","fasan","fehler","feind","felge","ferne","fest",
+            "fett","fieber","figur","filter","firma","flagge","flamme","flanke","flechte","flegel","flinte","flocke","flora","flosse","flotte","flucht",
+            "folge","form","formel","forum","fracht","frage","frau","freude","freund","friede","frisur","front","fuge","funken","furche","gebet",
+            "gebirge","geburt","gecko","gefahr","gehalt","geige","genuss","gepard","gericht","gerste","gesetz","gesicht","gewebe","gewehr","gewicht","gewinn",
+            "gewitter","gier","giebel","giraffe","gitarre","glanz","glatze","glaube","glied","globus","glucke","gnade","goblin","gong","gorilla","gott",
+            "grad","graf","gramm","granit","grenze","grille","grimm","grotte","grube","gruss","gunst","halm","halter","handel","handy","harfe",
+            "harz","hass","hauch","haufen","hebel","heft","heim","held","helm","herberge","herde","herkunft","herr","hilfe","hirse","hobby",
+            "hochzeit","hocker","hoehe","hoehle","hoffnung","horizont","huegel","huelle","hummer","humor","husten","idee","imker","impuls","index","inhalt",
+            "insekt","irrtum","jacht","jaeger","jaguar","januar","jubel","jugend","juli","juni","juwel","kaefer","kaefig","kaelte","kajak","kakao",
+            "kaktus","kalender","kamerad","kamm","kandidat","kanne","kanone","kanu","kapelle","kapital","kapsel","karotte","karriere","kartoffel","kasten","katalog",
+            "kater","kaviar","kehle","keil","kerl","kessel","kiesel","kissen","klammer","klasse","klavier","kleber","klemme","klima","klinik","klinke",
+            "kloster","kluft","knabe","knecht","knochen","knorpel","koala","kobold","kodex","kolben","kolonie","komfort","kompass","kondor","kontakt","konzept",
+            "konzern","konzert","koralle","kordel","korken","krabbe","kranich","kratzer","krawatte","kreatur","kredit","krippe","kristall","kritik","krokodil","kropf",
+            "krug","krume","kruste","kuckuck","kuerbis","kueste","kunde","kuppel","kurbel","kurier","kurve","kusine","kutsche","labor","lache","lack",
+            "laerm","laib","laie","laken","lakritz","laterne","latte","laube","lawine","leck","lehne","leiste","leopard","lerche","lesung","libelle",
+            "liebling","liga","lilie","limit","limo","lineal","lob","locher","logik","lohn","lokal","lorbeer","lord","los","lotse","lotto",
+            "luchs","luder","luege","lueke","luke","lump","lunch","lupe","lurch","lust","luxus","macke","made","mafia","magazin","magie",
+            "magma","mahnung","mai","makler","makrele","malz","mama","mammut","mandel","mangel","mango","manier","mappe","marder","marine","marke",
+            "mars","masche","maschine","maske","masse","matrose","matsch","maul","maurer","meile","meinung","melodie","melone","membran","mensa","mensch",
+            "mentor","merkmal","messe","metro","metzger","meute","mieder","miete","mikro","mime","mimik","mimose","mineral","minister","minus","minute",
+            "mischung","mission","mist","mixer","mobil","modul","moebel","moench","moeve","molekuel","molke","moment","monarch","monitor","monopol","monster",
+            "montag","monteur","moor","moped","mops","moral","morast","morchel","morgen","mosaik","moschee","moskito","most","motiv","motto","mucke",
+            "muffel","muehe","muffin","mumie","munition","murmel","muse","museum","musik","muskat","muskel","mythos","nabel","nachbar","nacken","nadel",
+            "naehe","nahrung","naht","napf","narkose","narr","nashorn","nation","natron","natter","natur","neapel","neffe","neigung","nektar","neon",
+            "neptun","nerv","nessel","neuheit","neuling","neuron","nichte","nickel","niemals","niesen","nihilist","nikotin","nimbus","ninja","nische","nitrat",
+            "niveau","nobel","nocke","nomade","nonsens","noppe","norden","norm","notfall","notiz","notruf","novelle","novize","nuance","nugget","null",
+            "nummer","nutzen","nylon","nymphe","obelisk","objekt","oblate","oboe","obst","ochse","ocker","odyssee","offerte","oheim","okay","oktave",
+            "oktober","oldtimer","olive","omega","omen","onyx","opal","opfer","opium","optik","optimum","option","opus","orakel","orbit","orchidee",
+            "ordnung","orient","orkan","ornament","oscar","osmose","ostern","ouzo","oval","oxid","ozean","ozon","pacht","packung","paddel","page",
+            "pagode","paket","paladin","palette","pampa","panama","paneel","panne","panorama","panther","panzer","papa","papagei","papaya","papier","paprika",
+            "parade","parfum","parka","parkett","parodie","parole","partei","partner","party","pascha","passage","pastor","pathos","patient","patrone","patsche",
+            "patzer","pauker","pause","pavian","pazifik","pech","pedal","pegel","pein","peitsche","pelikan","pelz","pendel","penner","pensum","perfekt",
+            "pergament","periode","perl","person","pest","petunie","pfad","pfalz","pfeiler","pflege","pflicht","pflug","pfosten","phantom","pharao","phase",
+            "philosoph","phoenix","phrase","physik","pianist","pickel","picknick","pieks","pier","pigment","pik","pille","pilot","piment","pinguin","pinie",
+            "pink","pinnwand","pionier","pipeline","pirouette","piste","pistole","pixel","pizza","plage","plan","planet","planke","plastik","platin","platte",
+            "pleite","plenum","plombe","plural","plus","pluesch","pocken","podest","podium","poem","poesie","poet","pointe","pokal","poker","polemik",
+            "polenta","police","politik","polizei","polka","polo","polyp","pomade","pomp","pool","pop","popcorn","pore","portal","portier","portion",
+            "porzellan","posaune","pose","position","post","poster","potenz","pracht","predigt","preisgabe","premiere","presse","prestige","priester","primel","prinzip",
+            "prise","prisma","privat","problem","produkt","profil","prognose","programm","projekt","prolog","promenade","propeller","prophet","prosa","prospekt","protein",
+            "protest","protokoll","proton","proviant","provinz","prozent","prozess","pruefung","pruegel","prunk","psalm","psycho","pub","publikum","pudding","puff",
+            "pulle","pulpe","pumps","punker","pupille","purpur","purzel","puste","pustel","pute","putsch","puzzle","pyjama","pyramide","python","quader",
+            "quadrat","qual","qualm","quartal","quartett","quartier","quarz","quaste","quatsch","quengel","quer","quetsch","queue","quickie","quirl","quiz",
+            "quote","rabbi","rabatt","rabatz","racker","radar","radau","radikale","radium","radius","raffel","rage","ragout","rain","rallye","rambo",
+            "ramme","rampe","ramsch","ranch","rang","ranzen","rapier","rapper","raps","raspel","rasse","rassel","raster","rasur","rathaus","ration",
+            "ratsche","ratsel","rattan","raub","raubtier","raufe","rauke","rausch","raute","razzia","reaktion","reaktor","realist","rebell","rebhuhn","recherche",
+            "rechner","recht","reck","recycling","redaktion","rede","redner","reduktion","reede","referat","referenz","reflex","reform","refrain","regelung","regent",
+            "regie","regiment","region","register","regler","reha","reibung","reichtum","reif","reigen","reim","reinigung","reisig","reiz","reklame","rekord",
+            "rektor","rekrut","relais","relief","religion","relikt","remis","renaissance","rendite","rennbahn","renner","renovierung","rente","rentier","rentner","reparatur",
+            "reportage","reporter","reptil","republik","requiem","reservat","reserve","residenz","resonanz","respekt","rest","resultat","retorte","rettich","rettung","reue",
+            "revanche","revier","revolte","revolution","revolver","revue","rezept","rezession","rhein","rhetorik","rheuma","rhythmus","richter","richtung","riege","riemen",
+            "riesling","rille","rinde","ringer","rinne","risiko","risotto","ritual","ritze","rivale","roboter","rochade","rochen","rodeo","rodler","rogen",
+            "rohling","rokoko","roller","rollstuhl","roman","romantik","romanze","roemer","rondell","rosette","rosine","rosmarin","rotation","rotor","routine","rowdy",
+            "rubin","rubrik","ruck","rucksack","rudel","rueffel","rufmord","rugby","ruhm","ruhr","ruin","ruine","rumba","rummel","rumor","rumpelkammer",
+            "rundbau","rune","runzel","rupie","ruepel","rusche","russe","ruessel","ruester","ruestung","rute","rutsch","saal","saebel","saege","saenger",
+            "saeule","safari","safran","saga","saite","sakko","salami","salon","salto","salut","salve","samba","samstag","sandalen","sanduhr","sardine",
+            "sarg","satire","saturn","sauce","saum","sauna","saxofon","scanner","schabe","schaden","schaefer","schaerfe","schale","schall","schanze","schar",
+            "schauer","scheich","scheitel","schenkel","scherbe","scherz","scheuche","schieber","schiene","schienbein","schiefer","schiene","schiff","schikane","schildkroete","schimmer",
+            "schinken","schlacht","schlacke","schlamm","schlehe","schleim","schlemmer","schlendrian","schlepper","schleuder","schleuse","schlick","schliff","schlinge","schlitten","schlitz",
+            "schlosser","schlucker","schlummer","schlund","schlupf","schmalz","schmelz","schmerz","schmied","schmuck","schmutz","schnake","schnalle","schnapps","schnauz","schneeflocke",
+            "schneider","schnepfe","schnitzel","schober","schock","schokolade","schoner","schopf","schorle","schoss","schote","schotter","schraege","schramme","schrein","schreiner",
+            "schrift","schrot","schrott","schrubber","schrumpf","schub","schublade","schuft","schuh","schulung","schummel","schund","schuppen","schurke","schurz","schuss",
+            "schussel","schuster","schwabe","schwaden","schwalbe","schwang","schwarte","schwebe","schwede","schwefel","schweif","schweiger","schweiss","schwelle","schwemme","schwenk",
+            "schwester","schwiele","schwindel","schwinge","schwips","schwung","schwur","seal","seehund","seemann","sehne","sehnsucht","seide","seilbahn","seismik","sekret",
+            "sekt","semester","seminar","sendung","senior","senke","sensor","sentenz","serbe","serie","serpentin","server","service","serviette","serum","sheriff",
+            "shorts","show","shuttle","sibirisch","sicherung","siedlung","sieger","silhouette","silo","simse","single","sinus","sippe","sirup","sitcom","skateboard",
+            "skelett","sketch","ski","skizze","skorpion","slalom","slip","slogan","smoking","snack","sockel","software","solist","sonde","sonnenschein","sopran",
+            "sosse","souffle","souvenir","sozius","spachtel","spaghetti","spalier","spannung","sparren","spass","spaten","spedition","spektrum","spende","sperling","sperre",
+            "sphinx","spickzettel","spind","spiral","spliss","sponsor","spore","spott","spray","sprecherin","springer","sprinkler","spritzer","sprosse","spruch","spuk",
+            "spule","spund","squash","staatsanwalt","stadion","staffel","stagnation","stake","standard","stanze","star","stativ","statue","status","steak","steckdose",
+            "steg","steigung","stellwerk","steno","steppe","stereo","stethoskop","steward","stickerei","stil","stint","stipendium","stirnband","stockwerk","stoerer","stollen",
+            "stolz","stopfen","stoppel","storung","stoss","strafzettel","strahl","strapaze","strategie","streamer","strebe","streber","streitwagen","stress","streusel","strip",
+            "strippe","stroh","struktur","strunk","stube","student","studio","studium","stunk","stunt","sturz","stuss","styropor","substanz","suffix","sultan",
+            "summe","sumpf","sund","superfood","suppe","surfer","sushi","symbol","symphonie","syndrom","synonym","synthese","syrup","system","tabelle","tablet",
+            "tacho","taekwondo","tagebuch","taktik","talent","talisman","talk","tampon","tangente","tango","tanke","tanker","tara","tarif","tarnkappe","tarot",
+            "tartan","tartsche","tatar","tatort","tattoo","taufe","taxi","team","technik","teddy","teenager","teekanne","teer","teilung","telefon","teleskop",
+            "temperament","tempo","tendenz","tennis","tenor","terminal","terrain","terrasse","terror","tertial","test","textil","theke","thema","theorie","therapie",
+            "these","thriller","thron","thunfisch","ticket","tiegel","tiefe","tiefkuehltruhe","tiger","tiki","tilde","timer","tinktur","tip","titan","toast",
+            "tobak","toilette","toleranz","tomate","tombola","tonne","tonnen","tontopf","toper","tornado","torpedo","torrent","torso","tortur","tote","totem",
+            "toto","toupet","tourist","trabant","trachee","track","trademark","tradition","tragik","trainer","traktor","tram","trampolin","trance","transfer","transit","transport","trapez","trash","trasse","traube","trauma","treffer","trend","tribune","tribut"
+        ];
+
+        // Kryptografisch sichere Zufallszahl
+        function secureRandom(max) {
+            const array = new Uint32Array(1);
+            crypto.getRandomValues(array);
+            return array[0] % max;
+        }
+
+        // Zufälliges Wort aus der Liste
+        function getRandomWord() {
+            return wordlist[secureRandom(wordlist.length)];
+        }
+
+        // Separatoren-Liste
+        const separators = ["-", ".", "_", ",", "/", "+", "*", "#", "!", "=", ":", ";", " "];
+
+        // Berechne Entropie in Bit
+        function calculateEntropy(wordCount, addNumber, randomSeparator) {
+            // Entropie pro Wort: log2(2048) = 11 Bit
+            let entropy = wordCount * Math.log2(wordlist.length);
+            // Zahl am Ende: log2(100) ≈ 6.6 Bit (00-99)
+            if (addNumber) {
+                entropy += Math.log2(100);
+            }
+            // Zufälliges Trennzeichen: log2(13) ≈ 3.7 Bit
+            if (randomSeparator) {
+                entropy += Math.log2(separators.length);
+            }
+            return Math.round(entropy);
+        }
+
+        // Passphrase generieren
+        function generate() {
+            const wordCount = parseInt(document.getElementById('wordCount').value);
+            const addNumber = document.getElementById('addNumber').checked;
+            const randomSeparator = document.getElementById('randomSeparator').checked;
+            const capitalize = document.getElementById('capitalize').checked;
+            
+            // Trennzeichen bestimmen
+            let separator;
+            if (randomSeparator) {
+                separator = separators[secureRandom(separators.length)];
+            } else {
+                separator = document.getElementById('separator').value;
+            }
+
+            let words = [];
+            for (let i = 0; i < wordCount; i++) {
+                let word = getRandomWord();
+                if (capitalize) {
+                    word = word.charAt(0).toUpperCase() + word.slice(1);
+                }
+                words.push(word);
+            }
+
+            let passphrase = words.join(separator);
+            let displayHtml = words.map(w => `<span class="word">${w}</span>`).join(`<span class="separator">${separator}</span>`);
+
+            if (addNumber) {
+                const num = secureRandom(100); // 0-99
+                const numStr = num.toString().padStart(2, '0'); // 00-99
+                passphrase += separator + numStr;
+                displayHtml += `<span class="separator">${separator}</span><span class="number">${numStr}</span>`;
+            }
+
+            document.getElementById('passphrase').innerHTML = displayHtml;
+            document.getElementById('passphrase').dataset.value = passphrase;
+
+            // Entropie aktualisieren
+            const entropy = calculateEntropy(wordCount, addNumber, randomSeparator);
+            document.getElementById('entropyValue').textContent = `${entropy} Bit`;
+            
+            // Visueller Balken (0-100 Bit als Skala)
+            const fillPercent = Math.min(100, (entropy / 100) * 100);
+            document.getElementById('entropyFill').style.width = `${fillPercent}%`;
+            
+            // Separator-Dropdown deaktivieren wenn zufällig
+            document.getElementById('separator').disabled = randomSeparator;
+        }
+
+        // In Zwischenablage kopieren (mit Fallback für Teams/Iframes)
+        async function copyToClipboard() {
+            const passphrase = document.getElementById('passphrase').dataset.value;
+            if (!passphrase) return;
+
+            let success = false;
+            
+            // Methode 1: Moderne Clipboard API
+            try {
+                await navigator.clipboard.writeText(passphrase);
+                success = true;
+            } catch (err) {
+                // Methode 2: Fallback mit execCommand
+                try {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = passphrase;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-9999px';
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    success = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                } catch (err2) {
+                    // Methode 3: Prompt zum manuellen Kopieren
+                    prompt('Passphrase manuell kopieren (Strg+C):', passphrase);
+                    success = true;
+                }
+            }
+            
+            if (success) {
+                const toast = document.getElementById('copiedToast');
+                const outputArea = document.getElementById('outputArea');
+                
+                toast.classList.add('show');
+                outputArea.classList.add('copied');
+                
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    outputArea.classList.remove('copied');
+                }, 1500);
+            }
+        }
+
+        // Tastaturkürzel
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                if (document.activeElement.tagName !== 'SELECT') {
+                    generate();
+                }
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+                const passphrase = document.getElementById('passphrase').dataset.value;
+                if (passphrase && window.getSelection().toString() === '') {
+                    copyToClipboard();
+                }
+            }
+        });
+
+        // Bei Optionsänderung neu generieren
+        document.getElementById('wordCount').addEventListener('change', generate);
+        document.getElementById('separator').addEventListener('change', generate);
+        document.getElementById('addNumber').addEventListener('change', generate);
+        document.getElementById('randomSeparator').addEventListener('change', generate);
+        document.getElementById('capitalize').addEventListener('change', generate);
+
+        // Initial generieren
+        generate();
+    </script>
+</body>
+</html>
