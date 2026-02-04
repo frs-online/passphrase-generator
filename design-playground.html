@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FRS Passphrase Generator – Design Playground</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --ui-bg: #1a1a1e;
+            --ui-surface: #232328;
+            --ui-border: #333;
+            --ui-text: #e4e4e7;
+            --ui-muted: #71717a;
+            --ui-accent: #3b82f6;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--ui-bg);
+            color: var(--ui-text);
+            min-height: 100vh;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Controls Panel */
+        .controls {
+            background: var(--ui-surface);
+            border-right: 1px solid var(--ui-border);
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: 100vh;
+        }
+
+        .controls h1 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--ui-text);
+        }
+
+        .controls .subtitle {
+            font-size: 0.75rem;
+            color: var(--ui-muted);
+            margin-bottom: 1.5rem;
+        }
+
+        .section {
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--ui-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        /* Presets */
+        .presets {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .preset-btn {
+            padding: 0.5rem 0.75rem;
+            background: var(--ui-bg);
+            border: 1px solid var(--ui-border);
+            border-radius: 6px;
+            color: var(--ui-text);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--ui-accent);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .preset-btn.active {
+            border-color: var(--ui-accent);
+            background: rgba(59, 130, 246, 0.2);
+        }
+
+        /* Control Groups */
+        .control-group {
+            margin-bottom: 1rem;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            margin-bottom: 0.375rem;
+            color: var(--ui-text);
+        }
+
+        .control-value {
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 0.7rem;
+            color: var(--ui-muted);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: var(--ui-border);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--ui-accent);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        select {
+            width: 100%;
+            padding: 0.5rem;
+            background: var(--ui-bg);
+            border: 1px solid var(--ui-border);
+            border-radius: 6px;
+            color: var(--ui-text);
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--ui-accent);
+        }
+
+        /* Color Swatches */
+        .color-swatches, .bg-swatches {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.375rem;
+        }
+
+        .swatch {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+        }
+
+        .swatch:hover {
+            transform: scale(1.1);
+            z-index: 1;
+        }
+
+        .swatch.active {
+            border-color: var(--ui-accent);
+            box-shadow: 0 0 0 2px var(--ui-bg), 0 0 0 4px var(--ui-accent);
+        }
+
+        .swatch.small {
+            width: 26px;
+            height: 26px;
+            border-radius: 4px;
+        }
+
+        .swatch.dark {
+            border-color: var(--ui-border);
+        }
+
+        .swatch.light {
+            border-color: var(--ui-border);
+        }
+
+        .color-name {
+            font-size: 0.75rem;
+            color: var(--ui-accent);
+            font-weight: 500;
+        }
+
+        .color-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        input[type="color"] {
+            width: 36px;
+            height: 28px;
+            border: 1px solid var(--ui-border);
+            border-radius: 4px;
+            cursor: pointer;
+            background: transparent;
+            padding: 0;
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 2px;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 2px;
+        }
+
+        .color-hex {
+            font-family: 'SF Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--ui-muted);
+            flex: 1;
+        }
+
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+        }
+
+        .toggle-label {
+            font-size: 0.8rem;
+        }
+
+        .toggle {
+            position: relative;
+            width: 40px;
+            height: 22px;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: var(--ui-border);
+            border-radius: 22px;
+            transition: 0.2s;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.2s;
+        }
+
+        .toggle input:checked + .toggle-slider {
+            background: var(--ui-accent);
+        }
+
+        .toggle input:checked + .toggle-slider::before {
+            transform: translateX(18px);
+        }
+
+        /* Preview Panel */
+        .preview-panel {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .preview-container {
+            flex: 1;
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+        }
+
+        .preview-wrapper {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        /* Prompt Output */
+        .prompt-output {
+            background: var(--ui-surface);
+            border-top: 1px solid var(--ui-border);
+            padding: 1rem 1.5rem;
+        }
+
+        .prompt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .prompt-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--ui-muted);
+        }
+
+        .copy-btn {
+            padding: 0.375rem 0.75rem;
+            background: var(--ui-accent);
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .copy-btn:hover {
+            opacity: 0.9;
+        }
+
+        .copy-btn.copied {
+            background: #22c55e;
+        }
+
+        .prompt-text {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: var(--ui-text);
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        /* Preview Styles - these get overwritten dynamically */
+        .generator-preview {
+            font-family: var(--preview-font);
+            background: var(--preview-bg);
+            border-radius: var(--preview-radius);
+            padding: var(--preview-padding);
+            box-shadow: var(--preview-shadow);
+        }
+
+        .generator-preview header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .generator-preview .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .generator-preview .logo-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--preview-icon-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--preview-accent);
+        }
+
+        .generator-preview .logo-icon svg {
+            width: 22px;
+            height: 22px;
+            fill: var(--preview-icon-fill);
+        }
+
+        .generator-preview h1 {
+            font-size: 1.375rem;
+            font-weight: 700;
+            color: var(--preview-text);
+        }
+
+        .generator-preview .subtitle {
+            font-size: 0.85rem;
+            color: var(--preview-text-secondary);
+        }
+
+        .generator-preview .output-area {
+            background: var(--preview-output-bg);
+            border: 2px solid var(--preview-border);
+            border-radius: calc(var(--preview-radius) - 4px);
+            padding: 1.25rem;
+            min-height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .generator-preview .output-area:hover {
+            border-color: var(--preview-accent);
+        }
+
+        .generator-preview .passphrase {
+            font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--preview-text);
+            text-align: center;
+        }
+
+        .generator-preview .passphrase .sep,
+        .generator-preview .passphrase .num {
+            color: var(--preview-accent);
+        }
+
+        .generator-preview .controls-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .generator-preview .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .generator-preview .control-group label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--preview-text-secondary);
+        }
+
+        .generator-preview .control-group select {
+            font-family: inherit;
+            font-size: 0.85rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--preview-input-bg);
+            border: 1px solid var(--preview-border);
+            border-radius: 4px;
+            color: var(--preview-text);
+        }
+
+        .generator-preview .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 0;
+            font-size: 0.85rem;
+            color: var(--preview-text);
+        }
+
+        .generator-preview .checkbox-row input {
+            accent-color: var(--preview-accent);
+            width: 16px;
+            height: 16px;
+        }
+
+        .generator-preview .btn-primary {
+            width: 100%;
+            padding: 0.875rem;
+            background: var(--preview-accent);
+            border: none;
+            border-radius: var(--preview-btn-radius);
+            color: var(--preview-btn-text);
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+            box-shadow: var(--preview-btn-shadow);
+        }
+
+        .generator-preview .btn-primary svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        .generator-preview .entropy-section {
+            margin-top: 1rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--preview-border);
+        }
+
+        .generator-preview .entropy-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.375rem;
+        }
+
+        .generator-preview .entropy-label {
+            color: var(--preview-text-secondary);
+        }
+
+        .generator-preview .entropy-value {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--preview-accent);
+            font-weight: 700;
+        }
+
+        .generator-preview .entropy-bar {
+            height: 6px;
+            background: var(--preview-output-bg);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .generator-preview .entropy-fill {
+            height: 100%;
+            width: 55%;
+            background: linear-gradient(90deg, #f59e0b, var(--preview-accent));
+            border-radius: 3px;
+        }
+
+        .generator-preview footer {
+            text-align: center;
+            margin-top: 1.25rem;
+            font-size: 0.7rem;
+            color: var(--preview-text-secondary);
+        }
+
+        .generator-preview .branding {
+            margin-top: 0.375rem;
+            font-size: 0.65rem;
+            color: var(--preview-text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <aside class="controls">
+            <h1>Design Playground</h1>
+            <p class="subtitle">Passphrasen-Generator für FRS</p>
+
+            <div class="section">
+                <div class="section-title">Presets</div>
+                <div class="presets">
+                    <button class="preset-btn" onclick="applyPreset('frs-corporate')">FRS Corporate</button>
+                    <button class="preset-btn" onclick="applyPreset('teal-modern')">Teal Modern</button>
+                    <button class="preset-btn" onclick="applyPreset('dark-tech')">Dark Tech</button>
+                    <button class="preset-btn" onclick="applyPreset('minimal-light')">Minimal Light</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Theme</div>
+                <div class="control-group">
+                    <div class="control-label">Mode</div>
+                    <select id="themeMode" onchange="updateState('themeMode', this.value)">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Accent Color</div>
+                <div class="color-swatches" id="accentSwatches">
+                    <button class="swatch" data-color="#d32f2f" data-name="FRS Red" title="FRS Red" style="background:#d32f2f" onclick="setAccentColor('#d32f2f')"></button>
+                    <button class="swatch" data-color="#e53935" data-name="Video1one" title="Video1one Red" style="background:#e53935" onclick="setAccentColor('#e53935')"></button>
+                    <button class="swatch" data-color="#1abc9c" data-name="Teal" title="Teal Modern" style="background:#1abc9c" onclick="setAccentColor('#1abc9c')"></button>
+                    <button class="swatch" data-color="#0288d1" data-name="Milesight" title="Milesight Blue" style="background:#0288d1" onclick="setAccentColor('#0288d1')"></button>
+                    <button class="swatch" data-color="#22c55e" data-name="Tech Green" title="Tech Green" style="background:#22c55e" onclick="setAccentColor('#22c55e')"></button>
+                    <button class="swatch" data-color="#f59e0b" data-name="Amber" title="Amber" style="background:#f59e0b" onclick="setAccentColor('#f59e0b')"></button>
+                    <button class="swatch" data-color="#8b5cf6" data-name="Purple" title="Purple" style="background:#8b5cf6" onclick="setAccentColor('#8b5cf6')"></button>
+                    <button class="swatch" data-color="#6b7280" data-name="Slate" title="Slate Gray" style="background:#6b7280" onclick="setAccentColor('#6b7280')"></button>
+                </div>
+                <div class="control-group" style="margin-top: 0.75rem;">
+                    <div class="color-row">
+                        <input type="color" id="accentColor" value="#d32f2f" onchange="updateState('accentColor', this.value)">
+                        <span class="color-hex" id="accentHex">#d32f2f</span>
+                        <span class="color-name" id="accentName">FRS Red</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Background Colors</div>
+                <div class="control-group">
+                    <div class="control-label">Page Background</div>
+                    <div class="bg-swatches">
+                        <button class="swatch small" title="White" style="background:#ffffff" onclick="updateState('bgColor','#ffffff')"></button>
+                        <button class="swatch small" title="Light Gray" style="background:#f5f5f5" onclick="updateState('bgColor','#f5f5f5')"></button>
+                        <button class="swatch small" title="Cool Gray" style="background:#f8f9fa" onclick="updateState('bgColor','#f8f9fa')"></button>
+                        <button class="swatch small" title="Warm Gray" style="background:#fafaf9" onclick="updateState('bgColor','#fafaf9')"></button>
+                        <button class="swatch small dark" title="Dark" style="background:#0a0a0b" onclick="updateState('bgColor','#0a0a0b')"></button>
+                        <button class="swatch small dark" title="Charcoal" style="background:#18181b" onclick="updateState('bgColor','#18181b')"></button>
+                    </div>
+                    <div class="color-row" style="margin-top:0.5rem;">
+                        <input type="color" id="bgColor" value="#f5f5f5" onchange="updateState('bgColor', this.value)">
+                        <span class="color-hex" id="bgHex">#f5f5f5</span>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="control-label">Card Background</div>
+                    <div class="bg-swatches">
+                        <button class="swatch small" title="White" style="background:#ffffff" onclick="updateState('cardColor','#ffffff')"></button>
+                        <button class="swatch small" title="Off-white" style="background:#fafafa" onclick="updateState('cardColor','#fafafa')"></button>
+                        <button class="swatch small dark" title="Dark Card" style="background:#141416" onclick="updateState('cardColor','#141416')"></button>
+                        <button class="swatch small dark" title="Darker" style="background:#1c1c1f" onclick="updateState('cardColor','#1c1c1f')"></button>
+                    </div>
+                    <div class="color-row" style="margin-top:0.5rem;">
+                        <input type="color" id="cardColor" value="#ffffff" onchange="updateState('cardColor', this.value)">
+                        <span class="color-hex" id="cardHex">#ffffff</span>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="control-label">Text Color</div>
+                    <div class="bg-swatches">
+                        <button class="swatch small" title="Near Black" style="background:#1a1a1a" onclick="updateState('textColor','#1a1a1a')"></button>
+                        <button class="swatch small" title="Dark Gray" style="background:#31363a" onclick="updateState('textColor','#31363a')"></button>
+                        <button class="swatch small light" title="Light" style="background:#e4e4e7" onclick="updateState('textColor','#e4e4e7')"></button>
+                        <button class="swatch small light" title="White" style="background:#fafafa" onclick="updateState('textColor','#fafafa')"></button>
+                    </div>
+                    <div class="color-row" style="margin-top:0.5rem;">
+                        <input type="color" id="textColor" value="#31363a" onchange="updateState('textColor', this.value)">
+                        <span class="color-hex" id="textHex">#31363a</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Typography</div>
+                <div class="control-group">
+                    <div class="control-label">Font Family</div>
+                    <select id="fontFamily" onchange="updateState('fontFamily', this.value)">
+                        <option value="Lato">Lato</option>
+                        <option value="Inter">Inter</option>
+                        <option value="Roboto">Roboto</option>
+                        <option value="Open Sans">Open Sans</option>
+                        <option value="system-ui">System UI</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Shape & Spacing</div>
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Card Radius</span>
+                        <span class="control-value" id="radiusValue">8px</span>
+                    </div>
+                    <input type="range" id="borderRadius" min="0" max="24" value="8" oninput="updateState('borderRadius', this.value)">
+                </div>
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Card Padding</span>
+                        <span class="control-value" id="paddingValue">24px</span>
+                    </div>
+                    <input type="range" id="cardPadding" min="12" max="40" value="24" oninput="updateState('cardPadding', this.value)">
+                </div>
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Button Radius</span>
+                        <span class="control-value" id="btnRadiusValue">4px</span>
+                    </div>
+                    <input type="range" id="btnRadius" min="0" max="16" value="4" oninput="updateState('btnRadius', this.value)">
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Effects</div>
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Shadow Intensity</span>
+                        <span class="control-value" id="shadowValue">Medium</span>
+                    </div>
+                    <input type="range" id="shadowIntensity" min="0" max="3" value="1" oninput="updateState('shadowIntensity', this.value)">
+                </div>
+                <div class="toggle-row">
+                    <span class="toggle-label">Card Border</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="showBorder" checked onchange="updateState('showBorder', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Button Style</div>
+                <div class="toggle-row">
+                    <span class="toggle-label">Uppercase Text</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="btnUppercase" checked onchange="updateState('btnUppercase', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="toggle-row">
+                    <span class="toggle-label">Button Shadow</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="btnShadow" onchange="updateState('btnShadow', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </aside>
+
+        <main class="preview-panel">
+            <div class="preview-container" id="previewContainer">
+                <div class="preview-wrapper">
+                    <div class="generator-preview" id="preview">
+                        <header>
+                            <div class="logo">
+                                <div class="logo-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 1C8.676 1 6 3.676 6 7v2H4v14h16V9h-2V7c0-3.324-2.676-6-6-6zm0 2c2.276 0 4 1.724 4 4v2H8V7c0-2.276 1.724-4 4-4zm-6 8h12v10H6V11zm6 3a2 2 0 0 0-1 3.732V20h2v-2.268A2 2 0 0 0 12 14z"/></svg>
+                                </div>
+                                <h1>Passphrasen-Generator</h1>
+                            </div>
+                            <p class="subtitle">Sichere, merkbare Passwörter – komplett offline</p>
+                        </header>
+
+                        <div class="output-area">
+                            <div class="passphrase">
+                                himmel<span class="sep">-</span>kaffee<span class="sep">-</span>wolke<span class="sep">-</span>stern<span class="sep">-</span><span class="num">42</span>
+                            </div>
+                        </div>
+
+                        <div class="controls-row">
+                            <div class="control-group">
+                                <label>Anzahl Wörter</label>
+                                <select disabled><option>4 Wörter</option></select>
+                            </div>
+                            <div class="control-group">
+                                <label>Trennzeichen</label>
+                                <select disabled><option>Bindestrich ( - )</option></select>
+                            </div>
+                        </div>
+
+                        <div class="checkbox-row">
+                            <input type="checkbox" checked disabled>
+                            <span>Zahl am Ende hinzufügen (00-99)</span>
+                        </div>
+
+                        <button class="btn-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                            <span id="btnText">Generieren</span>
+                        </button>
+
+                        <div class="entropy-section">
+                            <div class="entropy-header">
+                                <span class="entropy-label">Sicherheit (Entropie)</span>
+                                <span class="entropy-value">51 Bit</span>
+                            </div>
+                            <div class="entropy-bar">
+                                <div class="entropy-fill"></div>
+                            </div>
+                        </div>
+
+                        <footer>
+                            Quellcode einsehbar · Keine Cookies · Kein Tracking
+                            <div class="branding">FRS GmbH & Co. KG</div>
+                        </footer>
+                    </div>
+                </div>
+            </div>
+
+            <div class="prompt-output">
+                <div class="prompt-header">
+                    <span class="prompt-label">Generated Prompt</span>
+                    <button class="copy-btn" onclick="copyPrompt()">Copy Prompt</button>
+                </div>
+                <p class="prompt-text" id="promptText">Adjust the controls to generate a design prompt...</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Default state
+        const DEFAULTS = {
+            themeMode: 'light',
+            accentColor: '#d32f2f',
+            bgColor: '#f5f5f5',
+            cardColor: '#ffffff',
+            textColor: '#31363a',
+            fontFamily: 'Lato',
+            borderRadius: 8,
+            cardPadding: 24,
+            btnRadius: 4,
+            shadowIntensity: 1,
+            showBorder: true,
+            btnUppercase: true,
+            btnShadow: false
+        };
+
+        // Presets
+        const PRESETS = {
+            'frs-corporate': {
+                themeMode: 'light',
+                accentColor: '#d32f2f',
+                bgColor: '#f5f5f5',
+                cardColor: '#ffffff',
+                textColor: '#31363a',
+                fontFamily: 'Lato',
+                borderRadius: 8,
+                cardPadding: 24,
+                btnRadius: 4,
+                shadowIntensity: 1,
+                showBorder: true,
+                btnUppercase: true,
+                btnShadow: false
+            },
+            'teal-modern': {
+                themeMode: 'light',
+                accentColor: '#1abc9c',
+                bgColor: '#f8f9fa',
+                cardColor: '#ffffff',
+                textColor: '#31363a',
+                fontFamily: 'Lato',
+                borderRadius: 8,
+                cardPadding: 24,
+                btnRadius: 4,
+                shadowIntensity: 1,
+                showBorder: true,
+                btnUppercase: true,
+                btnShadow: false
+            },
+            'dark-tech': {
+                themeMode: 'dark',
+                accentColor: '#22c55e',
+                bgColor: '#0a0a0b',
+                cardColor: '#141416',
+                textColor: '#fafafa',
+                fontFamily: 'Inter',
+                borderRadius: 16,
+                cardPadding: 28,
+                btnRadius: 10,
+                shadowIntensity: 0,
+                showBorder: true,
+                btnUppercase: true,
+                btnShadow: true
+            },
+            'minimal-light': {
+                themeMode: 'light',
+                accentColor: '#2563eb',
+                bgColor: '#ffffff',
+                cardColor: '#ffffff',
+                textColor: '#1f2937',
+                fontFamily: 'system-ui',
+                borderRadius: 4,
+                cardPadding: 20,
+                btnRadius: 4,
+                shadowIntensity: 0,
+                showBorder: true,
+                btnUppercase: false,
+                btnShadow: false
+            }
+        };
+
+        let state = { ...DEFAULTS };
+
+        function updateState(key, value) {
+            if (typeof value === 'string' && !isNaN(value) && key !== 'accentColor' && key !== 'bgColor' && key !== 'cardColor' && key !== 'textColor' && key !== 'themeMode' && key !== 'fontFamily') {
+                value = parseInt(value);
+            }
+            state[key] = value;
+            updateAll();
+            updateSwatchHighlights();
+        }
+
+        function setAccentColor(color) {
+            state.accentColor = color;
+            document.getElementById('accentColor').value = color;
+            updateAll();
+            updateSwatchHighlights();
+        }
+
+        function updateSwatchHighlights() {
+            // Update accent swatches
+            document.querySelectorAll('#accentSwatches .swatch').forEach(swatch => {
+                const isActive = swatch.dataset.color.toLowerCase() === state.accentColor.toLowerCase();
+                swatch.classList.toggle('active', isActive);
+                if (isActive) {
+                    document.getElementById('accentName').textContent = swatch.dataset.name;
+                }
+            });
+
+            // Check if custom color (not in swatches)
+            const hasMatch = Array.from(document.querySelectorAll('#accentSwatches .swatch'))
+                .some(s => s.dataset.color.toLowerCase() === state.accentColor.toLowerCase());
+            if (!hasMatch) {
+                document.getElementById('accentName').textContent = 'Custom';
+            }
+        }
+
+        function applyPreset(presetName) {
+            state = { ...PRESETS[presetName] };
+            syncControlsToState();
+            updateAll();
+
+            // Update active state on buttons
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.toLowerCase().includes(presetName.split('-')[0]));
+            });
+        }
+
+        function syncControlsToState() {
+            document.getElementById('themeMode').value = state.themeMode;
+            document.getElementById('accentColor').value = state.accentColor;
+            document.getElementById('bgColor').value = state.bgColor;
+            document.getElementById('cardColor').value = state.cardColor;
+            document.getElementById('textColor').value = state.textColor;
+            document.getElementById('fontFamily').value = state.fontFamily;
+            document.getElementById('borderRadius').value = state.borderRadius;
+            document.getElementById('cardPadding').value = state.cardPadding;
+            document.getElementById('btnRadius').value = state.btnRadius;
+            document.getElementById('shadowIntensity').value = state.shadowIntensity;
+            document.getElementById('showBorder').checked = state.showBorder;
+            document.getElementById('btnUppercase').checked = state.btnUppercase;
+            document.getElementById('btnShadow').checked = state.btnShadow;
+            updateSwatchHighlights();
+        }
+
+        function updateAll() {
+            renderPreview();
+            updatePrompt();
+            updateValueDisplays();
+        }
+
+        function updateValueDisplays() {
+            document.getElementById('radiusValue').textContent = state.borderRadius + 'px';
+            document.getElementById('paddingValue').textContent = state.cardPadding + 'px';
+            document.getElementById('btnRadiusValue').textContent = state.btnRadius + 'px';
+            document.getElementById('accentHex').textContent = state.accentColor;
+            document.getElementById('bgHex').textContent = state.bgColor;
+            document.getElementById('cardHex').textContent = state.cardColor;
+            document.getElementById('textHex').textContent = state.textColor;
+
+            const shadowLabels = ['None', 'Subtle', 'Medium', 'Pronounced'];
+            document.getElementById('shadowValue').textContent = shadowLabels[state.shadowIntensity];
+        }
+
+        function renderPreview() {
+            const preview = document.getElementById('preview');
+            const container = document.getElementById('previewContainer');
+
+            // Calculate derived colors
+            const textSecondary = state.themeMode === 'dark' ? '#a1a1aa' : '#6b7277';
+            const textMuted = state.themeMode === 'dark' ? '#52525b' : '#9ca3af';
+            const borderColor = state.themeMode === 'dark' ? '#27272a' : '#d2d7da';
+            const outputBg = state.themeMode === 'dark' ? '#1c1c1f' : adjustBrightness(state.cardColor, -5);
+            const inputBg = state.themeMode === 'dark' ? '#1c1c1f' : state.cardColor;
+
+            // Shadow values
+            const shadows = [
+                'none',
+                '0 2px 4px rgba(0,0,0,0.08)',
+                '0 4px 12px rgba(0,0,0,0.12)',
+                '0 8px 24px rgba(0,0,0,0.16)'
+            ];
+
+            // Button text color (contrast)
+            const btnTextColor = isLightColor(state.accentColor) ? '#1a1a1a' : '#ffffff';
+            const iconFill = isLightColor(state.accentColor) ? '#1a1a1a' : '#ffffff';
+
+            // Set CSS variables
+            preview.style.setProperty('--preview-font', `'${state.fontFamily}', sans-serif`);
+            preview.style.setProperty('--preview-bg', state.cardColor);
+            preview.style.setProperty('--preview-radius', state.borderRadius + 'px');
+            preview.style.setProperty('--preview-padding', state.cardPadding + 'px');
+            preview.style.setProperty('--preview-shadow', shadows[state.shadowIntensity]);
+            preview.style.setProperty('--preview-accent', state.accentColor);
+            preview.style.setProperty('--preview-text', state.textColor);
+            preview.style.setProperty('--preview-text-secondary', textSecondary);
+            preview.style.setProperty('--preview-text-muted', textMuted);
+            preview.style.setProperty('--preview-border', state.showBorder ? borderColor : 'transparent');
+            preview.style.setProperty('--preview-output-bg', outputBg);
+            preview.style.setProperty('--preview-input-bg', inputBg);
+            preview.style.setProperty('--preview-btn-radius', state.btnRadius + 'px');
+            preview.style.setProperty('--preview-btn-text', btnTextColor);
+            preview.style.setProperty('--preview-btn-shadow', state.btnShadow ? '0 4px 12px ' + state.accentColor + '40' : 'none');
+            preview.style.setProperty('--preview-icon-radius', Math.max(4, state.borderRadius - 4) + 'px');
+            preview.style.setProperty('--preview-icon-fill', iconFill);
+
+            // Card border
+            preview.style.border = state.showBorder ? `1px solid ${borderColor}` : 'none';
+
+            // Button text
+            const btnText = document.getElementById('btnText');
+            btnText.style.textTransform = state.btnUppercase ? 'uppercase' : 'none';
+            btnText.style.letterSpacing = state.btnUppercase ? '0.03em' : 'normal';
+
+            // Container background
+            container.style.background = state.bgColor;
+        }
+
+        function updatePrompt() {
+            const parts = [];
+
+            // Theme
+            if (state.themeMode !== DEFAULTS.themeMode) {
+                parts.push(`a **${state.themeMode} theme**`);
+            }
+
+            // Colors
+            if (state.accentColor !== DEFAULTS.accentColor) {
+                parts.push(`accent color **${state.accentColor}** (${getColorName(state.accentColor)})`);
+            }
+
+            if (state.bgColor !== DEFAULTS.bgColor) {
+                parts.push(`page background **${state.bgColor}**`);
+            }
+
+            if (state.cardColor !== DEFAULTS.cardColor) {
+                parts.push(`card background **${state.cardColor}**`);
+            }
+
+            if (state.textColor !== DEFAULTS.textColor) {
+                parts.push(`text color **${state.textColor}**`);
+            }
+
+            // Typography
+            if (state.fontFamily !== DEFAULTS.fontFamily) {
+                parts.push(`**${state.fontFamily}** font family`);
+            }
+
+            // Shape
+            if (state.borderRadius !== DEFAULTS.borderRadius) {
+                parts.push(`**${state.borderRadius}px** border radius`);
+            }
+
+            if (state.cardPadding !== DEFAULTS.cardPadding) {
+                parts.push(`**${state.cardPadding}px** card padding`);
+            }
+
+            if (state.btnRadius !== DEFAULTS.btnRadius) {
+                parts.push(`**${state.btnRadius}px** button radius`);
+            }
+
+            // Effects
+            const shadowLabels = ['no shadow', 'a subtle shadow', 'a medium shadow', 'a pronounced shadow'];
+            if (state.shadowIntensity !== DEFAULTS.shadowIntensity) {
+                parts.push(shadowLabels[state.shadowIntensity]);
+            }
+
+            if (!state.showBorder && DEFAULTS.showBorder) {
+                parts.push('no card border');
+            } else if (state.showBorder && !DEFAULTS.showBorder) {
+                parts.push('visible card border');
+            }
+
+            // Button
+            if (!state.btnUppercase && DEFAULTS.btnUppercase) {
+                parts.push('sentence-case button text');
+            }
+
+            if (state.btnShadow && !DEFAULTS.btnShadow) {
+                parts.push('button shadow using the accent color');
+            }
+
+            // Build prompt
+            let prompt;
+            if (parts.length === 0) {
+                prompt = 'The current design matches the FRS Corporate defaults. Make changes above to generate a custom prompt.';
+            } else {
+                prompt = `Update the passphrase generator design to use ${parts.join(', ')}.`;
+            }
+
+            document.getElementById('promptText').textContent = prompt;
+        }
+
+        function copyPrompt() {
+            const text = document.getElementById('promptText').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = 'Copy Prompt';
+                    btn.classList.remove('copied');
+                }, 1500);
+            });
+        }
+
+        // Utility functions
+        function adjustBrightness(hex, percent) {
+            const num = parseInt(hex.slice(1), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.max(0, Math.min(255, (num >> 16) + amt));
+            const G = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amt));
+            const B = Math.max(0, Math.min(255, (num & 0x0000FF) + amt));
+            return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+        }
+
+        function isLightColor(hex) {
+            const num = parseInt(hex.slice(1), 16);
+            const r = (num >> 16) & 255;
+            const g = (num >> 8) & 255;
+            const b = num & 255;
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            return luminance > 0.5;
+        }
+
+        function getColorName(hex) {
+            const colors = {
+                '#d32f2f': 'FRS Red',
+                '#e53935': 'Video1one Red',
+                '#1abc9c': 'Teal',
+                '#0288d1': 'Milesight Blue',
+                '#22c55e': 'Tech Green',
+                '#2563eb': 'Blue',
+                '#8b5cf6': 'Purple',
+                '#f59e0b': 'Amber',
+                '#6b7280': 'Slate'
+            };
+            return colors[hex.toLowerCase()] || 'custom';
+        }
+
+        // Initialize
+        applyPreset('frs-corporate');
+    </script>
+</body>
+</html>
