@@ -608,7 +608,6 @@
                         <option value="=">Gleichzeichen ( = )</option>
                         <option value=":">Doppelpunkt ( : )</option>
                         <option value=";">Semikolon ( ; )</option>
-                        <option value=" ">Leerzeichen</option>
                     </select>
                 </div>
             </div>
@@ -848,7 +847,7 @@
             return wordlist[secureRandom(wordlist.length)];
         }
 
-        const separators = ["-", ".", "_", ",", "/", "+", "*", "#", "!", "=", ":", ";", " "];
+        const separators = ["-", ".", "_", ",", "/", "+", "*", "#", "!", "=", ":", ";"];
 
         function calculateEntropy(wordCount, addNumber, randomSeparator) {
             let entropy = wordCount * Math.log2(wordlist.length);
